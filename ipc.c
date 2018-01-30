@@ -4,29 +4,32 @@
 #include <signal.h>
 #include <time.h>
 
-
+static pid_t pid, ppid;
 
 void sigHandler0 (int sigNum) {
-		printf (" received an interrupt.\n");
-		// this is where shutdown code would be inserted
-		sleep (1);
-		printf ("Program will now exit.\n");
+		if(pid){
+			printf (" received.\n");
+			// this is where shutdown code would be inserted
+			sleep (1);
+			printf ("Program will now exit.\n");
+		}
 		exit(0);
 }
 
 
 void sig_handler1(int sig_num) {
-		printf("Handler 1.\n");
+		printf("received a SIGUSR1 signal.\n");
 }
 
 
 void sig_handler2(int sig_num) {
-		printf("Handler 2.\n");
+		printf("received a SIGUSR2 signal.\n");
 }
 
 
 int main(int argc, char **argv) {
-		int pid;
+		
+		ppid = getpid();
 		signal(SIGINT, sigHandler0);
 		signal(SIGUSR1, sig_handler1);
 		signal(SIGUSR2, sig_handler2);
@@ -34,23 +37,30 @@ int main(int argc, char **argv) {
 		if ((pid = fork()) < 0) {
 				printf("Fork error.\n");
 				exit(1);
-		} else if (pid) { //child
+		}
+		
+		if (!pid) { //child
 				while(1) {
+						
 						srand(time(NULL));
 						int r = rand() % 5 + 1;
-						printf("Random: %d\n", r);
+						
 						int r_sig = rand() % 2 + 0;
-						printf("Signal Random: %d\n", r_sig);
+						
 						sleep(r);
 						if (r_sig) {
-								kill(pid, SIGUSR1);
+								kill(ppid, SIGUSR1);
 						} else {
-								kill(pid, SIGUSR2);
+								kill(ppid, SIGUSR2);
 						}
 				}
 		} else { //parent
+				printf("Spawned child PID# %d\n", pid); 
 				while(1) {
+						printf("Waiting...     ");
+						fflush(stdout);
 						pause();
+						
 				}
 		}
 		return 0;
